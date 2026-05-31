@@ -53,7 +53,7 @@ static class Program
     {
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         List<string> argsList = args.Length > 0 ? new List<string>(args) : new List<string>();
-        string configDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AutoDarkMode");
+        string configDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WindowsProductivityMode");
 
         //Set up Logger
         NLog.Config.LoggingConfiguration config = new();
@@ -252,7 +252,7 @@ static class Program
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Service = new Service(timerMillis);
-            Service.Text = "Auto Dark Mode";
+            Service.Text = "Windows Productivity Mode";
 
             /* Disable for now.
             try

@@ -38,7 +38,7 @@ public class AdmConfigBuilder
     public BaseSettings<ScriptSwitchSettings> ScriptConfig { get; private set; }
     public UpdaterData UpdaterData { get; private set; }
     public PostponeData PostponeData { get; private set; }
-    public static string ConfigDir { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AutoDarkMode");
+    public static string ConfigDir { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WindowsProductivityMode");
     public static string ConfigFilePath { get; } = Path.Combine(ConfigDir, "config.yaml");
     public static string LocationDataPath { get; } = Path.Combine(ConfigDir, "location_data.yaml");
     public static string UpdaterDataPath { get; } = Path.Combine(ConfigDir, "update.yaml");

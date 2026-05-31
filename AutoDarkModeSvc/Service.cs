@@ -174,7 +174,7 @@ class Service : Form
         disableFastUiModeItem.Click += DisableFastUiMode;
         fastUiModeItem.DropDownItems.Add(disableFastUiModeItem);
 
-        NotifyIcon.Text = "Auto Dark Mode";
+        NotifyIcon.Text = "Windows Productivity Mode";
         state.UpdateNotifyIcon(builder);
         NotifyIcon.MouseDown += new MouseEventHandler(OpenApp);
         NotifyIcon.ContextMenuStrip = new ContextMenuStrip();

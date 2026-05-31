@@ -181,7 +181,7 @@ public class Autostart
 public class Updater
 {
     public bool AutoInstall { get; set; }
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
     public bool Silent { get; set; }
     public int DaysBetweenUpdateCheck { get; set; } = 7;
     public bool CheckOnStart { get; set; }

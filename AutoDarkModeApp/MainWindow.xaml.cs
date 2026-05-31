@@ -31,7 +31,7 @@ public sealed partial class MainWindow : Window
         AppWindow.SetTaskbarIcon(Path.Combine(AppContext.BaseDirectory, "Assets/AutoDarkModeIcon.ico"));
         AppWindow.SetTitleBarIcon(Path.Combine(AppContext.BaseDirectory, "Assets/AutoDarkModeIcon.ico"));
 
-        Title = Debugger.IsAttached ? "Auto Dark Mode Debug" : "Auto Dark Mode";
+        Title = Debugger.IsAttached ? "Windows Productivity Mode Debug" : "Windows Productivity Mode";
 
         // TODO: No one knows what the correct way to use it is. Waiting for official examples.
         [DllImport("user32.dll")]

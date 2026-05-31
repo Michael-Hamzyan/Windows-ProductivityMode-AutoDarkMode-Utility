@@ -215,19 +215,19 @@ public class GlobalState
             if (PostponeManager.IsUserDelayed || PostponeManager.IsSkipNextSwitch || PostponeManager.IsGracePeriod)
             {
                 NotifyIcon.Icon = Properties.Resources.AutoDarkModeIconPausedTray;
-                NotifyIcon.Text = $"Auto Dark Mode\n{themeState} - {Strings.Resources.Paused}";
+                NotifyIcon.Text = $"Windows Productivity Mode\n{themeState} - {Strings.Resources.Paused}";
             }
             else
             {
                 NotifyIcon.Icon = Properties.Resources.AutoDarkModeIconTray;
-                NotifyIcon.Text = $"Auto Dark Mode\n{themeState} - {Strings.Resources.Enabled}";
+                NotifyIcon.Text = $"Windows Productivity Mode\n{themeState} - {Strings.Resources.Enabled}";
             }
         }
         else
         {
             NotifyIcon.Icon = Properties.Resources.AutoDarkModeIconDisabledTray;
-            if (themeState.Length > 0) NotifyIcon.Text = $"Auto Dark Mode\n{themeState} - {Strings.Resources.Disabled}";
-            else NotifyIcon.Text = $"Auto Dark Mode\nDisabled";
+            if (themeState.Length > 0) NotifyIcon.Text = $"Windows Productivity Mode\n{themeState} - {Strings.Resources.Disabled}";
+            else NotifyIcon.Text = "Windows Productivity Mode\nDisabled";
         }
     }
 }
