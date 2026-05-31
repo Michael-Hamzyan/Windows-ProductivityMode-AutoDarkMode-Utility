@@ -434,6 +434,42 @@ static class MessageParser
                     break;
                 #endregion
 
+                #region FastUiMode
+                case string s when s.StartsWith(Command.ActivateFastUiMode):
+                    Logger.Info("signal received: activate Fast UI Mode");
+                    string fastUiMinutesString = message.Replace(Command.ActivateFastUiMode, "").Trim();
+                    DateTime? activeUntil = null;
+                    if (int.TryParse(fastUiMinutesString, out int fastUiMinutes) && fastUiMinutes > 0)
+                    {
+                        activeUntil = DateTime.Now.AddMinutes(fastUiMinutes);
+                    }
+                    UiPerformanceHandler.ActivateFastUiMode(activeUntil);
+                    SendResponse(new ApiResponse()
+                    {
+                        StatusCode = StatusCode.Ok,
+                        Message = UiPerformanceHandler.GetStatus()
+                    }.ToString());
+                    break;
+
+                case Command.DisableFastUiMode:
+                    Logger.Info("signal received: disable Fast UI Mode");
+                    UiPerformanceHandler.DisableActiveProfile();
+                    SendResponse(new ApiResponse()
+                    {
+                        StatusCode = StatusCode.Ok,
+                        Message = UiPerformanceHandler.GetStatus()
+                    }.ToString());
+                    break;
+
+                case Command.GetFastUiModeStatus:
+                    SendResponse(new ApiResponse()
+                    {
+                        StatusCode = StatusCode.Ok,
+                        Message = UiPerformanceHandler.GetStatus()
+                    }.ToString());
+                    break;
+                #endregion
+
                 #region UpdateFailed
                 case Command.UpdateFailed:
                     Logger.Info("signal received: notify about failed update");

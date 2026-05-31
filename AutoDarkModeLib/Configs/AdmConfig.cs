@@ -38,6 +38,7 @@ public class AdmConfig
         IdleChecker = new();
         Notifications = new();
         AutoSwitchNotify = new();
+        UiPerformance = new();
 
         // New Component Settings;
         AppsSwitch = new();
@@ -67,10 +68,75 @@ public class AdmConfig
     public Events Events { get; set; }
     public Notifications Notifications { get; set; }
     public AutoSwitchNotify AutoSwitchNotify { get; set; }
+    public UiPerformance UiPerformance { get; set; }
     public Hotkeys Hotkeys { get; set; }
     public IdleChecker IdleChecker { get; set; }
     public BaseSettings<WallpaperSwitchSettings> WallpaperSwitch { get; set; }
     public Updater Updater { get; set; }
+}
+
+public class UiPerformance
+{
+    public bool FastUiModeActive { get; set; }
+    public DateTime? FastUiModeActiveUntil { get; set; }
+    public string ActiveProfileName { get; set; }
+    public UiPerformanceSnapshot ActiveSnapshot { get; set; }
+    public List<UiPerformanceProfile> Profiles { get; set; } = new()
+    {
+        new UiPerformanceProfile
+        {
+            Name = "Fast UI Mode",
+            SetMinimizeMaximizeAnimation = true,
+            MinimizeMaximizeAnimationEnabled = false,
+            SetTaskbarGrouping = true,
+            TaskbarGrouping = TaskbarGroupingMode.Never
+        }
+    };
+
+    public UiPerformanceProfile GetFastUiProfile()
+    {
+        UiPerformanceProfile profile = Profiles?.Find(p => p.Name == "Fast UI Mode");
+        if (profile != null)
+        {
+            return profile;
+        }
+
+        Profiles ??= new();
+        profile = new UiPerformanceProfile
+        {
+            Name = "Fast UI Mode",
+            SetMinimizeMaximizeAnimation = true,
+            MinimizeMaximizeAnimationEnabled = false,
+            SetTaskbarGrouping = true,
+            TaskbarGrouping = TaskbarGroupingMode.Never
+        };
+        Profiles.Add(profile);
+        return profile;
+    }
+}
+
+public class UiPerformanceProfile
+{
+    public string Name { get; set; }
+    public bool SetMinimizeMaximizeAnimation { get; set; }
+    public bool MinimizeMaximizeAnimationEnabled { get; set; }
+    public bool SetTaskbarGrouping { get; set; }
+    public TaskbarGroupingMode TaskbarGrouping { get; set; } = TaskbarGroupingMode.Never;
+}
+
+public class UiPerformanceSnapshot
+{
+    public bool? MinimizeMaximizeAnimationEnabled { get; set; }
+    public bool? AppliedMinimizeMaximizeAnimationEnabled { get; set; }
+    public TaskbarGroupingMode? TaskbarGrouping { get; set; }
+    public TaskbarGroupingMode? AppliedTaskbarGrouping { get; set; }
+}
+
+public enum TaskbarGroupingMode
+{
+    Always = 0,
+    WhenTaskbarIsFull = 1,
+    Never = 2
 }
 
 public class AutoSwitchNotify

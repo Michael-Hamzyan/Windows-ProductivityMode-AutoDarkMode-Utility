@@ -57,6 +57,7 @@ class Service : Form
     public readonly ToolStripMenuItem toggleThemeItem = new();
     public readonly ToolStripMenuItem pauseThemeSwitchItem = new();
     public readonly ToolStripMenuItem tryFixTheme = new();
+    public readonly ToolStripMenuItem fastUiModeItem = new();
 
     private readonly ToolStripProfessionalRenderer toolStripDarkRenderer = new DarkRenderer();
     private readonly ToolStripProfessionalRenderer toolStripDefaultRenderer = new();
@@ -74,11 +75,13 @@ class Service : Form
         toggleThemeItem.Name = "toggleTheme";
         pauseThemeSwitchItem.Name = "pauseThemeSwitch";
         tryFixTheme.Name = "tryFixTheme";
+        fastUiModeItem.Name = "fastUiMode";
         forceDarkMenuItem.Text = Strings.Resources.TrayMenuItem_ForceDarkTheme;
         forceLightMenuItem.Text = Strings.Resources.TrayMenuItem_ForceLightTheme;
         autoThemeSwitchingItem.Text = Strings.Resources.TrayMenuItem_AutomaticThemeSwitch;
         toggleThemeItem.Text = Strings.Resources.TrayMenuItem_ToggleTheme;
         tryFixTheme.Text = Strings.Resources.TrayMenuItem_TryFixTheme;
+        fastUiModeItem.Text = "Fast UI Mode";
 
         NotifyIcon = new NotifyIcon();
         state.SetNotifyIcon(NotifyIcon);
@@ -110,9 +113,11 @@ class Service : Form
         };
 
         WardenModule warden = new("ModuleWarden", Timers, true);
+        UiPerformanceModule uiPerformance = new("UiPerformance", true);
         ConfigMonitor.RegisterWarden(warden);
         ConfigMonitor.UpdateEventStates();
         MainTimer.RegisterModule(warden);
+        MainTimer.RegisterModule(uiPerformance);
 
         if (Builder.Config.WindowsThemeMode.Enabled && Builder.Config.WindowsThemeMode.MonitorActiveTheme) WindowsThemeMonitor.StartThemeMonitor();
         Timers.ForEach(t => t.Start());
@@ -159,6 +164,15 @@ class Service : Form
         toggleThemeItem.Click += new EventHandler(ToggleTheme);
         pauseThemeSwitchItem.Click += new EventHandler(PauseThemeSwitch);
         tryFixTheme.Click += new EventHandler(TryFixTheme);
+        fastUiModeItem.DropDownItems.Add(MakeFastUiModeMenuItem("Enable for 30 minutes", 30));
+        fastUiModeItem.DropDownItems.Add(MakeFastUiModeMenuItem("Enable for 1 hour", 60));
+        fastUiModeItem.DropDownItems.Add(MakeFastUiModeMenuItem("Enable for 2 hours", 120));
+        fastUiModeItem.DropDownItems.Add(MakeFastUiModeMenuItem("Enable until evening", MinutesUntilEvening()));
+        fastUiModeItem.DropDownItems.Add(MakeFastUiModeMenuItem("Enable for today", MinutesUntilEndOfDay()));
+        fastUiModeItem.DropDownItems.Add(new ToolStripSeparator());
+        ToolStripMenuItem disableFastUiModeItem = new("Disable Fast UI Mode");
+        disableFastUiModeItem.Click += DisableFastUiMode;
+        fastUiModeItem.DropDownItems.Add(disableFastUiModeItem);
 
         NotifyIcon.Text = "Auto Dark Mode";
         state.UpdateNotifyIcon(builder);
@@ -172,6 +186,7 @@ class Service : Form
         NotifyIcon.ContextMenuStrip.Items.Insert(0, forceLightMenuItem);
         NotifyIcon.ContextMenuStrip.Items.Insert(0, new ToolStripSeparator());
         NotifyIcon.ContextMenuStrip.Items.Insert(0, tryFixTheme);
+        NotifyIcon.ContextMenuStrip.Items.Insert(0, fastUiModeItem);
         NotifyIcon.ContextMenuStrip.Items.Insert(0, toggleThemeItem);
         NotifyIcon.ContextMenuStrip.Items.Insert(0, pauseThemeSwitchItem);
         NotifyIcon.ContextMenuStrip.Items.Insert(0, autoThemeSwitchingItem);
@@ -187,6 +202,45 @@ class Service : Form
     private void TryFixTheme(object sender, EventArgs e)
     {
         ThemeManager.RequestSwitch(new(SwitchSource.Manual, refreshDwmViaColorization: true));
+    }
+
+    private ToolStripMenuItem MakeFastUiModeMenuItem(string text, int minutes)
+    {
+        ToolStripMenuItem item = new(text)
+        {
+            Tag = minutes
+        };
+        item.Click += ActivateFastUiMode;
+        return item;
+    }
+
+    private void ActivateFastUiMode(object sender, EventArgs e)
+    {
+        int minutes = sender is ToolStripMenuItem item && item.Tag is int value ? value : 0;
+        UiPerformanceHandler.ActivateFastUiMode(minutes > 0 ? DateTime.Now.AddMinutes(minutes) : null);
+    }
+
+    private void DisableFastUiMode(object sender, EventArgs e)
+    {
+        UiPerformanceHandler.DisableActiveProfile();
+    }
+
+    private static int MinutesUntilEvening()
+    {
+        DateTime now = DateTime.Now;
+        DateTime evening = now.Date.AddHours(20);
+        if (evening <= now)
+        {
+            evening = now.AddMinutes(30);
+        }
+        return Math.Max(1, (int)Math.Ceiling((evening - now).TotalMinutes));
+    }
+
+    private static int MinutesUntilEndOfDay()
+    {
+        DateTime now = DateTime.Now;
+        DateTime endOfDay = now.Date.AddDays(1);
+        return Math.Max(1, (int)Math.Ceiling((endOfDay - now).TotalMinutes));
     }
 
     private void UpdateContextMenu(object sender, EventArgs e)
@@ -216,6 +270,10 @@ class Service : Form
             forceLightMenuItem.Checked = false;
         }
         autoThemeSwitchingItem.Checked = builder.Config.AutoThemeSwitchingEnabled;
+        fastUiModeItem.Checked = builder.Config.UiPerformance.FastUiModeActive;
+        fastUiModeItem.Text = builder.Config.UiPerformance.FastUiModeActive && builder.Config.UiPerformance.FastUiModeActiveUntil.HasValue
+            ? $"Fast UI Mode (until {builder.Config.UiPerformance.FastUiModeActiveUntil.Value:HH:mm})"
+            : "Fast UI Mode";
 
         if (builder.Config.AutoThemeSwitchingEnabled) pauseThemeSwitchItem.Visible = true;
         else pauseThemeSwitchItem.Visible = false;

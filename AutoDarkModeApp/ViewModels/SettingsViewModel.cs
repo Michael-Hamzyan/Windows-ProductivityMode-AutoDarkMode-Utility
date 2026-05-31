@@ -12,6 +12,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using TaskbarGroupingMode = AutoDarkModeLib.Configs.TaskbarGroupingMode;
 
 namespace AutoDarkModeApp.ViewModels;
 
@@ -37,6 +38,16 @@ public partial class SettingsViewModel : ObservableRecipient
     {
         Stable,
         Beta,
+    }
+
+    public enum FastUiDuration
+    {
+        ThirtyMinutes,
+        OneHour,
+        TwoHours,
+        UntilEvening,
+        Today,
+        Manual,
     }
 
     public ObservableCollection<LanguageOption> LanguageOptions { get; }
@@ -87,6 +98,24 @@ public partial class SettingsViewModel : ObservableRecipient
     public partial bool IsAutostart { get; set; }
 
     [ObservableProperty]
+    public partial bool IsMenuFadeOrSlideEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsFastUiModeActive { get; set; }
+
+    [ObservableProperty]
+    public partial FastUiDuration SelectedFastUiDuration { get; set; }
+
+    [ObservableProperty]
+    public partial string? FastUiModeStatus { get; set; }
+
+    [ObservableProperty]
+    public partial bool FastUiDisablesMinimizeMaximizeAnimation { get; set; }
+
+    [ObservableProperty]
+    public partial bool FastUiSetsTaskbarNeverCombine { get; set; }
+
+    [ObservableProperty]
     public partial bool IsLoginWithTask { get; set; }
 
     [ObservableProperty]
@@ -106,6 +135,10 @@ public partial class SettingsViewModel : ObservableRecipient
     public ICommand CheckUpdateCommand { get; }
 
     public ICommand AutostartRefreshCommand { get; }
+
+    public ICommand ActivateFastUiModeCommand { get; }
+
+    public ICommand DisableFastUiModeCommand { get; }
 
     public SettingsViewModel(IErrorService errorService, ILocalSettingsService localSettingsService)
     {
@@ -179,6 +212,16 @@ public partial class SettingsViewModel : ObservableRecipient
         {
             await ValidateAutostart();
         });
+
+        ActivateFastUiModeCommand = new RelayCommand(async () =>
+        {
+            await ActivateFastUiMode();
+        });
+
+        DisableFastUiModeCommand = new RelayCommand(async () =>
+        {
+            await DisableFastUiMode();
+        });
     }
 
     private void SetAutostartDetailsVisibility(bool visible)
@@ -217,6 +260,14 @@ public partial class SettingsViewModel : ObservableRecipient
         IsAutoInstall = _builder.Config.Updater.AutoInstall;
         IsUpdateSilent = _builder.Config.Updater.Silent;
         IsLoginWithTask = _builder.Config.Tunable.UseLogonTask;
+        IsMenuFadeOrSlideEnabled = WindowsUiSettings.GetMenuFadeOrSlideEnabled();
+        IsFastUiModeActive = _builder.Config.UiPerformance.FastUiModeActive;
+        FastUiModeStatus = _builder.Config.UiPerformance.FastUiModeActive && _builder.Config.UiPerformance.FastUiModeActiveUntil.HasValue
+            ? $"Active until {_builder.Config.UiPerformance.FastUiModeActiveUntil.Value:HH:mm}"
+            : _builder.Config.UiPerformance.FastUiModeActive ? "Active" : "Inactive";
+        var fastUiProfile = _builder.Config.UiPerformance.GetFastUiProfile();
+        FastUiDisablesMinimizeMaximizeAnimation = fastUiProfile.SetMinimizeMaximizeAnimation && !fastUiProfile.MinimizeMaximizeAnimationEnabled;
+        FastUiSetsTaskbarNeverCombine = fastUiProfile.SetTaskbarGrouping && fastUiProfile.TaskbarGrouping == TaskbarGroupingMode.Never;
 
         if (string.IsNullOrEmpty(_builder.Config.Updater.VersionQueryUrl))
         {
@@ -263,6 +314,50 @@ public partial class SettingsViewModel : ObservableRecipient
         }
         await Task.Delay(fakeResponsiveUIDelay);
         SetAutostartDetailsVisibility(true);
+    }
+
+    private async Task ActivateFastUiMode()
+    {
+        int minutes = SelectedFastUiDuration switch
+        {
+            FastUiDuration.ThirtyMinutes => 30,
+            FastUiDuration.OneHour => 60,
+            FastUiDuration.TwoHours => 120,
+            FastUiDuration.UntilEvening => MinutesUntilEvening(),
+            FastUiDuration.Today => MinutesUntilEndOfDay(),
+            _ => 0,
+        };
+        string command = minutes > 0 ? $"{Command.ActivateFastUiMode} {minutes}" : Command.ActivateFastUiMode;
+        ApiResponse response = ApiResponse.FromString(await MessageHandler.Client.SendMessageAndGetReplyAsync(command));
+        IsFastUiModeActive = response.StatusCode == StatusCode.Ok;
+        FastUiModeStatus = response.Message;
+        _builder.Load();
+    }
+
+    private async Task DisableFastUiMode()
+    {
+        ApiResponse response = ApiResponse.FromString(await MessageHandler.Client.SendMessageAndGetReplyAsync(Command.DisableFastUiMode));
+        IsFastUiModeActive = false;
+        FastUiModeStatus = response.Message;
+        _builder.Load();
+    }
+
+    private static int MinutesUntilEvening()
+    {
+        DateTime now = DateTime.Now;
+        DateTime evening = now.Date.AddHours(20);
+        if (evening <= now)
+        {
+            evening = now.AddMinutes(30);
+        }
+        return Math.Max(1, (int)Math.Ceiling((evening - now).TotalMinutes));
+    }
+
+    private static int MinutesUntilEndOfDay()
+    {
+        DateTime now = DateTime.Now;
+        DateTime endOfDay = now.Date.AddDays(1);
+        return Math.Max(1, (int)Math.Ceiling((endOfDay - now).TotalMinutes));
     }
 
 
@@ -536,6 +631,44 @@ public partial class SettingsViewModel : ObservableRecipient
         {
             _builder.Config.Tunable.DwmRefreshViaColorization = IsDwmRefreshViaColorization;
         }
+        SafeSaveBuilder();
+    }
+
+    partial void OnIsMenuFadeOrSlideEnabledChanged(bool value)
+    {
+        if (_isInitializing)
+            return;
+
+        try
+        {
+            WindowsUiSettings.SetMenuFadeOrSlideEnabled(value);
+        }
+        catch (Exception ex)
+        {
+            _errorService.ShowErrorMessage(ex, App.MainWindow.Content.XamlRoot, "SetMenuFadeOrSlideEnabled");
+            IsMenuFadeOrSlideEnabled = WindowsUiSettings.GetMenuFadeOrSlideEnabled();
+        }
+    }
+
+    partial void OnFastUiDisablesMinimizeMaximizeAnimationChanged(bool value)
+    {
+        if (_isInitializing)
+            return;
+
+        var profile = _builder.Config.UiPerformance.GetFastUiProfile();
+        profile.SetMinimizeMaximizeAnimation = value;
+        profile.MinimizeMaximizeAnimationEnabled = false;
+        SafeSaveBuilder();
+    }
+
+    partial void OnFastUiSetsTaskbarNeverCombineChanged(bool value)
+    {
+        if (_isInitializing)
+            return;
+
+        var profile = _builder.Config.UiPerformance.GetFastUiProfile();
+        profile.SetTaskbarGrouping = value;
+        profile.TaskbarGrouping = TaskbarGroupingMode.Never;
         SafeSaveBuilder();
     }
 

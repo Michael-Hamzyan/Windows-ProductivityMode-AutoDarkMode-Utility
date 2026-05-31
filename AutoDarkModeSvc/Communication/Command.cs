@@ -185,6 +185,15 @@ public static class Command
     [Includable]
     public const string CleanMonitors = "--clean-monitors";
 
+    [Includable]
+    public const string ActivateFastUiMode = "--activate-fast-ui";
+
+    [Includable]
+    public const string DisableFastUiMode = "--disable-fast-ui";
+
+    [Includable]
+    public const string GetFastUiModeStatus = "--get-fast-ui-status";
+
     public const string UpdateFailed = "--update-failed";
 
     public const string GetLearnedThemeNames = "--get-learned-theme-names";
