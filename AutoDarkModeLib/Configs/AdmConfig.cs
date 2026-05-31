@@ -43,6 +43,7 @@ public class AdmConfig
         // New Component Settings;
         AppsSwitch = new();
         SystemSwitch = new();
+        SystemSwitch.Component.Mode = Mode.DarkOnly;
         TouchKeyboardSwitch = new();
         ColorFilterSwitch = new();
         WallpaperSwitch = new();
