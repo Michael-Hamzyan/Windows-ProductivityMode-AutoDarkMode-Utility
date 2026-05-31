@@ -88,7 +88,7 @@ public class UiPerformance
             Name = "Fast UI Mode",
             SetMinimizeMaximizeAnimation = true,
             MinimizeMaximizeAnimationEnabled = false,
-            SetTaskbarGrouping = true,
+            SetTaskbarGrouping = false,
             TaskbarGrouping = TaskbarGroupingMode.Never
         }
     };
@@ -107,7 +107,7 @@ public class UiPerformance
             Name = "Fast UI Mode",
             SetMinimizeMaximizeAnimation = true,
             MinimizeMaximizeAnimationEnabled = false,
-            SetTaskbarGrouping = true,
+            SetTaskbarGrouping = false,
             TaskbarGrouping = TaskbarGroupingMode.Never
         };
         Profiles.Add(profile);
